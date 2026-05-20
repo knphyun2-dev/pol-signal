@@ -1,106 +1,55 @@
-<script>
-const API_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg"; // 🔥 키 넣기
-
-async function analyze() {
-  const userInput = document.getElementById("userInput").value;
-  const resultBox = document.getElementById("result");
-
-  if (!userInput) {
-    alert("상황을 입력하세요!");
-    return;
+// api/analyze.js (에러 추적 기능이 탑재된 초정밀 진단 버전)
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: '허용되지 않는 요청입니다.' });
   }
 
-  resultBox.innerText = "분석 중...";
+  const { sys, msg } = req.body;
+  const API_KEY = process.env.ANTHROPIC_API_KEY; 
 
-  const prompt = `
-너는 학교폭력 및 형사법 전문가다.
-
-사용자가 입력한 상황을 분석해라.
-
-반드시 JSON 형식으로만 답변해라.
-
-{
-  "school_violence": "O/X/애매",
-  "reason": "판단 이유",
-  "type": ["폭력 유형"],
-  "criminal_issue": true,
-  "law": ["관련 법"],
-  "risk_level": 1,
-  "advice": "행동 조언"
-}
-
-상황:
-${userInput}
-`;
+  // [진단 1] Vercel에 키가 아예 안 들어왔을 때
+  if (!API_KEY) {
+    return res.status(500).json({ message: '🔐 [서버 에러] Vercel 환경변수(Value)에 구글 API 키가 등록되지 않았거나 반영되지 않았습니다.' });
+  }
 
   try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + API_KEY,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }]
-            }
-          ]
-        }),
-      }
-    );
+    const combinedPrompt = `${sys}\n\n[분석 대상 데이터]\n${msg}\n\n⚠️ 중요 지시: 부연 설명 없이 오직 JSON 양식만 텍스트로 출력하세요.`;
 
-    // 🔥 핵심: json() 쓰지 말고 text()로 받기
-    const raw = await response.text();
-    console.log("RAW:", raw);
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: combinedPrompt }] }]
+      })
+    });
 
-    // JSON 아닐 경우 바로 에러 보여줌
-    if (!raw.startsWith("{")) {
-      throw new Error("API 오류 → " + raw);
+    // 구글 서버가 보낸 raw 텍스트를 먼저 받습니다 (에러 분석용)
+    const rawResult = await response.text(); 
+
+    // [진단 2] 구글 AI 서버 자체에서 에러를 뱉었을 때
+    if (!response.ok) {
+      return res.status(response.status).json({ message: `🚫 [구글 서버 에러] 상태코드: ${response.status} / 내용: ${rawResult}` });
     }
 
-    const data = JSON.parse(raw);
-
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      throw new Error("응답 없음");
+    const data = JSON.annotation ? JSON.parse(rawResult) : JSON.parse(rawResult);
+    
+    if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+      return res.status(500).json({ message: `❓ [데이터 구조 에러] 구글 응답 형식이 예상과 다릅니다: ${rawResult}` });
     }
 
-    // 코드블럭 제거
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-    const parsed = JSON.parse(text);
-
-    resultBox.innerText = formatResult(parsed);
+    const textResponse = data.candidates[0].content.parts[0].text;
+    
+    // [진단 3] AI 답변을 웹 화면용 JSON으로 조립하다가 깨졌을 때
+    try {
+      const jsonString = textResponse.replace(/```json|```/g, "").trim();
+      const parsedData = JSON.parse(jsonString);
+      return res.status(200).json(parsedData);
+    } catch (jsonErr) {
+      return res.status(500).json({ message: `🧩 [JSON 조립 에러] AI가 순수한 데이터 양식 외에 다른 말을 섞었습니다. AI 답변 내용: ${textResponse}` });
+    }
 
   } catch (error) {
-    console.error(error);
-    resultBox.innerText = "❌ 오류 발생:\n" + error.message;
+    // [진단 4] 네트워크 단절 등 예상치 못한 시스템 예외가 터졌을 때
+    return res.status(500).json({ message: `💥 [시스템 시스템 오류] ${error.message}` });
   }
 }
-
-// 결과 출력
-function formatResult(data) {
-  return `
-📌 학교폭력 여부: ${data.school_violence}
-
-📌 판단 이유:
-${data.reason}
-
-📌 폭력 유형:
-${data.type.join(", ")}
-
-📌 형사 문제 여부: ${data.criminal_issue ? "있음" : "없음"}
-
-📌 관련 법:
-${data.law.join(", ")}
-
-📌 위험도: ${data.risk_level} 단계
-
-📌 행동 조언:
-${data.advice}
-`;
-}
-</script>

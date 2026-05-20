@@ -1,5 +1,5 @@
 <script>
-const API_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg"; // 🔥 여기에 본인 키 넣기
+const API_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg"; // 🔥 키 넣기
 
 async function analyze() {
   const userInput = document.getElementById("userInput").value;
@@ -35,7 +35,7 @@ ${userInput}
 
   try {
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=" + API_KEY,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + API_KEY,
       {
         method: "POST",
         headers: {
@@ -51,7 +51,16 @@ ${userInput}
       }
     );
 
-    const data = await response.json();
+    // 🔥 핵심: json() 쓰지 말고 text()로 받기
+    const raw = await response.text();
+    console.log("RAW:", raw);
+
+    // JSON 아닐 경우 바로 에러 보여줌
+    if (!raw.startsWith("{")) {
+      throw new Error("API 오류 → " + raw);
+    }
+
+    const data = JSON.parse(raw);
 
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
@@ -59,7 +68,7 @@ ${userInput}
       throw new Error("응답 없음");
     }
 
-    // 🔥 JSON 파싱 (AI가 가끔 이상하게 줄 수 있어서 처리)
+    // 코드블럭 제거
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const parsed = JSON.parse(text);
@@ -68,11 +77,11 @@ ${userInput}
 
   } catch (error) {
     console.error(error);
-    resultBox.innerText = "오류 발생: " + error.message;
+    resultBox.innerText = "❌ 오류 발생:\n" + error.message;
   }
 }
 
-// ✅ 결과 예쁘게 출력
+// 결과 출력
 function formatResult(data) {
   return `
 📌 학교폭력 여부: ${data.school_violence}

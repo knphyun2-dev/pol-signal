@@ -1,4 +1,4 @@
-// api/analyze.js (구글 제미나이 정식 버전 v1 적용)
+// api/analyze.js (구글 제미나이 최신 2.5 정식 버전 적용)
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: '허용되지 않는 요청입니다.' });
@@ -12,8 +12,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 💡 핵심 수정: v1beta에서 정식 안정 버전 주소인 v1으로 변경했습니다!
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    // 💡 주소를 v1 정식 버전으로 고치고, 모델을 은퇴하지 않은 최신 'gemini-2.5-flash'로 교체했습니다.
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

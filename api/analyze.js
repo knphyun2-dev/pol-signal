@@ -1,4 +1,4 @@
-// api/analyze.js (구글 strict JSON 규격 적용 버전)
+// api/analyze.js (구글 제미나이 언더바 규격 완벽 반영)
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: '허용되지 않는 요청입니다.' });
@@ -19,7 +19,6 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: msg }] }],
-        // 💡 핵심 수정: 대문자를 없애고 구글 공식 규격인 언더바(_) 형태로 전면 교체했습니다.
         system_instruction: { parts: [{ text: sys }] },
         generation_config: {
           response_mime_type: "application/json" 

@@ -1,10 +1,13 @@
-// api/analyze.js 안에는 이 코드만 딱 들어가야 합니다!
+// api/analyze.js (구글 제미나이 무료 버전)
 export default async function handler(req, res) {
+  // POST 요청만 허용합니다.
   if (req.method !== 'POST') {
     return res.status(405).json({ message: '허용되지 않는 요청입니다.' });
   }
 
   const { sys, msg } = req.body;
+  
+  // Vercel에 등록할 비밀키입니다. (이름은 기존 그대로 ANTHROPIC_API_KEY를 쓰셔도 무방합니다)
   const API_KEY = process.env.ANTHROPIC_API_KEY; 
 
   if (!API_KEY) {
@@ -12,18 +15,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // 구글 제미나이 1.5 Flash 무료 API 호출 주소
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY,
-        "anthropic-version": "2023-06-01"
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-latest", 
-        max_tokens: 1000,
-        system: sys,
-        messages: [{ role: "user", content: msg }]
+        contents: [{ parts: [{ text: msg }] }],
+        systemInstruction: { parts: [{ text: sys }] },
+        generationConfig: {
+          responseMimeType: "application/json" // AI에게 처음부터 JSON 형태로 답변하라고 강제 설정
+        }
       })
     });
 
@@ -33,11 +36,12 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    const textResponse = data.content[0].text;
+    const textResponse = data.candidates[0].content.parts[0].text;
     
-    const jsonString = textResponse.replace(/```json|```/g, "").trim();
-    const parsedData = JSON.parse(jsonString);
-
+    // 제미나이가 보내준 JSON 문자열을 진짜 오브젝트로 변환
+    const parsedData = JSON.parse(textResponse.trim());
+    
+    // 웹 화면(index.html)으로 최종 배달
     return res.status(200).json(parsedData);
 
   } catch (error) {

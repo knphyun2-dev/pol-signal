@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const { sys, msg } = req.body;
   
   // 🔑 여기 따옴표 안에 본인의 구글 API 키(AIzaSy...)를 정확히 넣어주세요.
-  const API_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg";
+  const API_KEY = "AIzaSyDStpNyXD50kCO4pzHA7I6LyGGgLI0CHWo";
 
   try {
     const combinedPrompt = sys + "\n\n[데이터]\n" + msg;

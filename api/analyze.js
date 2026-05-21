@@ -1,14 +1,16 @@
-// api/analyze.js (구글 모델 이름 불일치 완벽 해결 버전)
+// api/analyze.js 내부의 상단 부분만 이렇게 수정합니다!
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: '허용되지 않는 요청입니다.' });
   }
 
   const { sys, msg } = req.body;
-  const API_KEY = process.env.ANTHROPIC_API_KEY; 
+  
+  // 💡 옛날 이름 대신 새로운 나만의 이름으로 변경!
+  const API_KEY = process.env.GEMINI_FREE_KEY; 
 
   if (!API_KEY) {
-    return res.status(500).json({ message: '🔐 [서버 에러] Vercel 환경변수에 구글 API 키가 등록되지 않았습니다.' });
+    return res.status(500).json({ message: '🔐 [서버 에러] Vercel 환경변수에 GEMINI_FREE_KEY가 등록되지 않았습니다.' });
   }
 
   try {

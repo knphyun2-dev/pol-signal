@@ -1,25 +1,18 @@
-// api/analyze.js (Vercel 환경변수 버그 우회 및 다이렉트 키 장착 버전)
+// api/analyze.js (버전: 무적 제미나이 스타트)
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: '허용되지 않는 요청입니다.' });
+    return res.status(405).json({ message: 'POST 요청만 받습니다.' });
   }
 
   const { sys, msg } = req.body;
   
-  // 🔑 Vercel 대시보드 대신, 여기에 내 구글 API 키를 직접 적어줍니다!
-  // ★ 중요: 앞뒤 따옴표 사이에 구글 AI 스튜디오에서 복사한 AIzaSy... 키를 넣으세요.
-  // 이 파일은 서버 내부 비밀 파일이라 외부 사용자가 절대로 코드를 훔쳐볼 수 없습니다.
-  const API_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg"; 
-
-  if (API_KEY.includes("AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg") || !API_KEY.startsWith("AIzaSyAKK")) {
-    return res.status(500).json({ message: '🔐 [서버 에러] 코드 내부의 API_KEY 칸에 본인의 진짜 구글 키(AIzaSy...)를 올바르게 입력해주세요.' });
-  }
+  // 🔑 딱 여기 따옴표 사이에만 내 진짜 구글 API 키(AIzaSy...)를 정확히 붙여넣어 주세요!
+  const GOOGLE_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg";
 
   try {
-    const combinedPrompt = `${sys}\n\n[분석 대상 데이터]\n${msg}\n\n⚠️ 중요 지시: 부연 설명 없이 오직 JSON 양식만 텍스트로 출력하세요.`;
+    const combinedPrompt = `${sys}\n\n[데이터]\n${msg}\n\n⚠️ 주의: 오직 요청된 JSON 형식으로만 답변하세요.`;
 
-    // 가장 확실하고 안정적인 v1beta 주소로 고정하여 호출합니다.
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -30,21 +23,24 @@ export default async function handler(req, res) {
     const rawResult = await response.text();
 
     if (!response.ok) {
-      return res.status(response.status).json({ message: `🚫 [구글 서버 에러] 상태코드: ${response.status} / 내용: ${rawResult}` });
+      // 🕵️‍♂️ [암행어사 표식] 구글 서버가 뱉은 진짜 에러를 날것 그대로 화면에 보여줍니다.
+      return res.status(response.status).json({ 
+        message: `🚫 [구글 실시간 에러] 코드: ${response.status} / 내용: ${rawResult} / (마킹: 무적제미나이)` 
+      });
     }
 
     const data = JSON.parse(rawResult);
     const textResponse = data.candidates[0].content.parts[0].text;
     
-    try {
-      const jsonString = textResponse.replace(/```json|```/g, "").trim();
-      const parsedData = JSON.parse(jsonString);
-      return res.status(200).json(parsedData);
-    } catch (jsonErr) {
-      return res.status(500).json({ message: `🧩 [JSON 조립 에러] AI 답변을 매칭하는 데 실패했습니다.` });
-    }
+    const jsonString = textResponse.replace(/```json|```/g, "").trim();
+    const parsedData = JSON.parse(jsonString);
+
+    return res.status(200).json(parsedData);
 
   } catch (error) {
-    return res.status(500).json({ message: `💥 [시스템 오류] ${error.message}` });
+    // 🕵️‍♂️ [암행어사 표식] 코드 조립 과정에서 터진 에러를 잡아줍니다.
+    return res.status(500).json({ 
+      message: `💥 [코드 내부 에러] ${error.message} / (마킹: 무적제미나이)` 
+    });
   }
 }

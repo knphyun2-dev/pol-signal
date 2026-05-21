@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   // 이 파일은 서버 내부 비밀 파일이라 외부 사용자가 절대로 코드를 훔쳐볼 수 없습니다.
   const API_KEY = "AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg"; 
 
-  if (API_KEY.includes("AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg") || !API_KEY.startsWith("AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg")) {
+  if (API_KEY.includes("AIzaSyAKK_58H5DZMT5YIxgOPXAg1ZAJk8580mg") || !API_KEY.startsWith("AIzaSyAKK")) {
     return res.status(500).json({ message: '🔐 [서버 에러] 코드 내부의 API_KEY 칸에 본인의 진짜 구글 키(AIzaSy...)를 올바르게 입력해주세요.' });
   }
 
